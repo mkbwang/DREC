@@ -1,4 +1,7 @@
 
+
+#' Deconvolve ecdfs of one sample with others
+#'
 #' @param y response vector
 #' @param X predictor matrix
 #' @param lambdas penalty parameters to choose from
@@ -54,13 +57,17 @@ deconv <- function(y, X, lambdas=c(1e-3, 1e-2, 1e-1)){
 
 
 
+#' deconvolve every row of a matrix with ECDF values
+#'
 #' @param Q input matrix whose entries are ECDF values
 #' @param lambdas penalty parameters to choose from
 #'
 #' @returns denoised matrix
-#' @importFrom parallel detectCores makeCluster
+#' @importFrom parallel detectCores makeCluster stopCluster
 #' @importFrom doParallel registerDoParallel
 #' @importFrom foreach foreach %dopar%
+#'
+#' @export
 denoise <- function(Q, lambdas=c(1e-3, 1e-2, 1e-1)){
 
   nsamples <- nrow(Q)
@@ -68,6 +75,7 @@ denoise <- function(Q, lambdas=c(1e-3, 1e-2, 1e-1)){
   cl <- makeCluster(numCores)
   registerDoParallel(cl)
 
+  i <- 1
   denoised_Q <- foreach(i=1:nsamples, .combine=rbind,
                         .export="deconv",
                         .packages="quadprog") %dopar%{
@@ -80,13 +88,4 @@ denoise <- function(Q, lambdas=c(1e-3, 1e-2, 1e-1)){
   stopCluster(cl)
   denoised_Q
 }
-
-
-
-
-
-
-
-
-
 

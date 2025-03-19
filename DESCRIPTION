@@ -2,7 +2,7 @@ Package: DREC
 Title: Denoise sequencing count tables by Regressions on Empirical Cumulative Distributions
 Version: 0.0.1
 Authors@R: 
-    person("Mukai", "Wang", "wangmk@umich.edu", role = c("aut", "cre"),
+    person(given="Mukai", family="Wang", email="wangmk@umich.edu", role = c("aut", "cre", "ctb"),
            comment = c(ORCID = "0000-0002-1413-1904"))
 Description: DREC aims to denoise sequencing count tables such as metagenomics count matrices in a nonparametric way.
 License: MIT + file LICENSE
@@ -22,4 +22,3 @@ Suggests:
 Depends: 
     R (>= 4.1.0)
 LazyData: false
-VignetteBuilder: knitr
