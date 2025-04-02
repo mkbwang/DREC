@@ -64,15 +64,19 @@ calcval <- function(Q_denoised, Q_observed, values){
 #' @param Q_denoised denoised empirical CDF table
 #' @param Q_observed original empirical CDF table
 #' @param count_observed observed counts table
+#' @param ncores number of cores for parallel processing, by default 1
+#'
 #' @returns denoised counts
 #' @importFrom parallel detectCores makeCluster stopCluster
 #' @importFrom doParallel registerDoParallel
 #' @importFrom foreach foreach %dopar%
+#' @importFrom parallelly availableCores
 #' @export
-ecdf2count <- function(Q_denoised, Q_observed, count_observed){
+ecdf2count <- function(Q_denoised, Q_observed, count_observed,
+                       ncores=1){
 
     nfeatures <- ncol(Q_denoised)
-    numCores <- detectCores() - 1
+    numCores <- min(availableCores(), ncores)
     cl <- makeCluster(numCores)
     registerDoParallel(cl)
 

@@ -4,7 +4,7 @@
 \alias{ecdf2count}
 \title{Map denoised quantiles back to counts for each column}
 \usage{
-ecdf2count(Q_denoised, Q_observed, count_observed)
+ecdf2count(Q_denoised, Q_observed, count_observed, ncores = 1)
 }
 \arguments{
 \item{Q_denoised}{denoised empirical CDF table}
@@ -12,6 +12,8 @@ ecdf2count(Q_denoised, Q_observed, count_observed)
 \item{Q_observed}{original empirical CDF table}
 
 \item{count_observed}{observed counts table}
+
+\item{ncores}{number of cores for parallel processing, by default 1}
 }
 \value{
 denoised counts

@@ -4,12 +4,14 @@
 \alias{denoise}
 \title{deconvolve every row of a matrix with ECDF values}
 \usage{
-denoise(Q, lambdas = c(0.001, 0.01, 0.1))
+denoise(Q, lambdas = c(0.001, 0.01, 0.1), ncores = 1)
 }
 \arguments{
 \item{Q}{input matrix whose entries are ECDF values}
 
 \item{lambdas}{penalty parameters to choose from}
+
+\item{ncores}{number of cores for parallel processing, by default 1}
 }
 \value{
 denoised matrix

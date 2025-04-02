@@ -61,17 +61,19 @@ deconv <- function(y, X, lambdas=c(1e-3, 1e-2, 1e-1)){
 #'
 #' @param Q input matrix whose entries are ECDF values
 #' @param lambdas penalty parameters to choose from
+#' @param ncores number of cores for parallel processing, by default 1
 #'
 #' @returns denoised matrix
 #' @importFrom parallel detectCores makeCluster stopCluster
 #' @importFrom doParallel registerDoParallel
+#' @importFrom parallelly availableCores
 #' @importFrom foreach foreach %dopar%
 #'
 #' @export
-denoise <- function(Q, lambdas=c(1e-3, 1e-2, 1e-1)){
+denoise <- function(Q, lambdas=c(1e-3, 1e-2, 1e-1), ncores=1){
 
   nsamples <- nrow(Q)
-  numCores <- detectCores() - 1
+  numCores <- min(availableCores(), ncores)
   cl <- makeCluster(numCores)
   registerDoParallel(cl)
 
