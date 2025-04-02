@@ -4,12 +4,14 @@
 \alias{drec}
 \title{Denoise metagenomics count table}
 \usage{
-drec(X, lambdas = c(0.001, 0.01, 0.1))
+drec(X, lambdas = c(0.001, 0.01, 0.1), ncores = 1)
 }
 \arguments{
 \item{X}{raw count matrix, rows are samples and columns are features}
 
 \item{lambdas}{penalty parameters to choose from}
+
+\item{ncores}{number of cores for parallel computing}
 }
 \value{
 denoised count matrix
