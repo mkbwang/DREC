@@ -2,20 +2,20 @@
 % Please edit documentation in R/denoise.R
 \name{deconv}
 \alias{deconv}
-\title{Deconvolve ecdfs of one sample with others}
+\title{Deconvolve ecdfs of one sample with others (quadprog version)}
 \usage{
-deconv(y, X, lambdas = c(0.001, 0.01, 0.1))
+deconv(y, X, lambda)
 }
 \arguments{
 \item{y}{response vector}
 
 \item{X}{predictor matrix}
 
-\item{lambdas}{penalty parameters to choose from}
+\item{lambda}{penalty parameter}
 }
 \value{
 weights, denoised value and chosen penalty parameter
 }
 \description{
-Deconvolve ecdfs of one sample with others
+Deconvolve ecdfs of one sample with others (quadprog version)
 }

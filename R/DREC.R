@@ -9,7 +9,7 @@
 #'
 #' @returns denoised count matrix
 #' @export
-drec <- function(X, lambdas=c(1e-3, 1e-2, 1e-1), ncores=1){
+drec <- function(X, lambdas=c(1e-3, 1e-2, 1e-1, 1, 10, 100), ncores=1){
 
     X_cdf <- count2ecdf(X)
     cat("denoising ECDFs...\n")

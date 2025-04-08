@@ -4,7 +4,7 @@
 \alias{drec}
 \title{Denoise metagenomics count table}
 \usage{
-drec(X, lambdas = c(0.001, 0.01, 0.1), ncores = 1)
+drec(X, lambdas = c(0.001, 0.01, 0.1, 1, 10, 100), ncores = 1)
 }
 \arguments{
 \item{X}{raw count matrix, rows are samples and columns are features}
