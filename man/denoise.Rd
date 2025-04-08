@@ -4,7 +4,7 @@
 \alias{denoise}
 \title{deconvolve every row of a matrix with ECDF values}
 \usage{
-denoise(Q, lambdas = c(0.001, 0.01, 0.1), ncores = 1)
+denoise(Q, lambdas = c(0.001, 0.01, 0.1, 1, 10, 100), ncores = 1)
 }
 \arguments{
 \item{Q}{input matrix whose entries are ECDF values}
