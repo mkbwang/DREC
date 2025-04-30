@@ -40,12 +40,13 @@ deconv <- function(y, X, lambda){
 #' @param X predictor matrix
 #' @param lambdas penalty parameters to try
 #' @returns weights, mean error for the and chosen penalty parameter
+#' @importFrom stats median
 cv.deconv <- function(y, X, lambdas = c(1e-3, 1e-2, 1e-1)){
 
   n_sample <- nrow(X)
   n_feature <- ncol(X)
-  cv_list <- split(seq(1, n_sample),
-                   cut(seq(1, n_sample), breaks=5))
+  cv_list <- split(sample(n_sample),
+                   cut(seq(1, n_sample), breaks=10))
 
   validation_error <- rep(0, length(lambdas))
   weights_list <- list()
@@ -53,10 +54,10 @@ cv.deconv <- function(y, X, lambdas = c(1e-3, 1e-2, 1e-1)){
   for(j in 1:length(lambdas)){
 
     lambda <- lambdas[j]
-    errors <- rep(0, 5)
-    weights_mat <- matrix(0, nrow=5, ncol=n_feature)
+    errors <- rep(0, 10)
+    weights_mat <- matrix(0, nrow=10, ncol=n_feature)
 
-    for (k in 1:5){
+    for (k in 1:10){
       y_validation <- y[cv_list[[k]]]
       X_validation <- X[cv_list[[k]], ]
 
@@ -68,7 +69,7 @@ cv.deconv <- function(y, X, lambdas = c(1e-3, 1e-2, 1e-1)){
       weights_mat[k, ] <- fitted_weights
 
       y_validation_pred <- X_validation %*% fitted_weights
-      errors[k] <- mean((y_validation - y_validation_pred)^2)
+      errors[k] <- median(abs(y_validation - y_validation_pred))
     }
 
     validation_error[j] <- mean(errors)
