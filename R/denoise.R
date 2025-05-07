@@ -32,6 +32,60 @@ deconv <- function(y, X, lambda){
 
 }
 
+#' Deconvolve ecdfs of one sample with others (l1 loss)
+#'
+#' @param y response vector
+#' @param X predictor matrix
+#' @param lambda penalty parameter
+#' @importFrom Matrix Matrix
+#' @importFrom osqp osqp osqpSettings
+#' @returns weights, denoised value and chosen penalty parameter
+deconv.l1 <- function(y, X, lambda){
+
+  n_predictor <- ncol(X)
+  n_sample <- nrow(X)
+  Pmat <- Matrix(diag(c(rep(1, n_predictor), rep(0, n_sample))) * lambda *2,
+                 sparse=TRUE)
+  qvec <- c(rep(0, n_predictor), rep(1, n_sample))
+
+  # sum to one constraint
+  A_constraint0 <- matrix(c(rep(1, n_predictor), rep(0, n_sample)), nrow=1)
+  l_constraint0 <- 1
+  u_constraint0 <- 1
+
+  # absolute value constraint
+  A_constraint1 <- cbind(X, diag(n_sample))
+  l_constraint1 <- y
+  u_constraint1 <- rep(Inf, n_sample)
+
+  A_constraint2 <- cbind(-X, diag(n_sample))
+  l_constraint2 <- -y
+  u_constraint2 <- rep(Inf, n_sample)
+
+
+  # nonegative constraint
+  A_constraint3 <- cbind(diag(n_predictor), matrix(0, nrow=n_predictor, ncol=n_sample))
+  l_constraint3 <- rep(0, n_predictor)
+  u_constraint3 <- rep(Inf, n_predictor)
+
+  Amat <- Matrix(rbind(A_constraint0, A_constraint1, A_constraint2, A_constraint3),
+                 sparse=TRUE)
+  l_vec <- c(l_constraint0, l_constraint1, l_constraint2, l_constraint3)
+  u_vec <- c(u_constraint0, u_constraint1, u_constraint2, u_constraint3)
+
+  settings <- osqpSettings(alpha = 1.0, max_iter=8000)
+  model <- osqp(Pmat, qvec, Amat, l_vec, u_vec, settings)
+
+
+  result <- model$Solve()
+  weights <- result$x[1:n_predictor]
+  weights[weights < 1/n_predictor/10] = 0
+  weights <- weights / sum(weights)
+
+  return(weights)
+
+}
+
 
 
 #' Cross validation of deconvolution
