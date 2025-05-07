@@ -40,6 +40,7 @@ deconv <- function(y, X, lambda){
 #' @importFrom Matrix Matrix
 #' @importFrom osqp osqp osqpSettings
 #' @returns weights, denoised value and chosen penalty parameter
+#' @export
 deconv.l1 <- function(y, X, lambda){
 
   n_predictor <- ncol(X)
@@ -73,7 +74,7 @@ deconv.l1 <- function(y, X, lambda){
   l_vec <- c(l_constraint0, l_constraint1, l_constraint2, l_constraint3)
   u_vec <- c(u_constraint0, u_constraint1, u_constraint2, u_constraint3)
 
-  settings <- osqpSettings(alpha = 1.0, max_iter=8000)
+  settings <- osqpSettings(alpha = 1.0, max_iter=8000, verbose=FALSE)
   model <- osqp(Pmat, qvec, Amat, l_vec, u_vec, settings)
 
 
@@ -93,46 +94,48 @@ deconv.l1 <- function(y, X, lambda){
 #' @param y response vector
 #' @param X predictor matrix
 #' @param lambdas penalty parameters to try
+#' @param cv.fold number of folds for cross validation
 #' @returns weights, mean error for the and chosen penalty parameter
 #' @importFrom stats median
-cv.deconv <- function(y, X, lambdas = c(1e-3, 1e-2, 1e-1)){
+#' @export
+cv.deconv <- function(y, X, lambdas = c(0.1, 0.5, 1, 5, 10, 20, 50, 100),
+                      cv.fold=5){
 
   n_sample <- nrow(X)
   n_feature <- ncol(X)
   cv_list <- split(sample(n_sample),
-                   cut(seq(1, n_sample), breaks=10))
+                   cut(seq(1, n_sample), breaks=cv.fold))
 
-  validation_error <- rep(0, length(lambdas))
+  validation_errors <- rep(0, length(lambdas))
   weights_list <- list()
 
   for(j in 1:length(lambdas)){
 
     lambda <- lambdas[j]
-    errors <- rep(0, 10)
-    weights_mat <- matrix(0, nrow=10, ncol=n_feature)
+    errors <- rep(0, cv.fold)
+    weights_mat <- matrix(0, nrow=cv.fold, ncol=n_feature)
 
-    for (k in 1:10){
+    for (k in 1:cv.fold){
       y_validation <- y[cv_list[[k]]]
       X_validation <- X[cv_list[[k]], ]
 
       y_train <- y[-cv_list[[k]]]
       X_train <- X[-cv_list[[k]], ]
 
-      fitted_result <- deconv(y_train, X_train, lambda=lambda)
-      fitted_weights <- fitted_result$weight
+      fitted_weights <- deconv.l1(y_train, X_train, lambda=lambda)
       weights_mat[k, ] <- fitted_weights
 
       y_validation_pred <- X_validation %*% fitted_weights
-      errors[k] <- median(abs(y_validation - y_validation_pred))
+      errors[k] <- mean(abs(y_validation - y_validation_pred))
     }
 
-    validation_error[j] <- mean(errors)
+    validation_errors[j] <- mean(errors)
     weights_list[[j]] <- weights_mat
 
   }
 
   return(list(weights_list=weights_list,
-              validation_error=validation_error,
+              validation_errors=validation_errors,
               lambdas=lambdas))
 
 }
@@ -143,41 +146,47 @@ cv.deconv <- function(y, X, lambdas = c(1e-3, 1e-2, 1e-1)){
 #' @param Q input matrix whose entries are ECDF values
 #' @param lambdas penalty parameters to choose from
 #' @param ncores number of cores for parallel processing, by default 1
-#'
+#' @param cv.fold number of folds for cross validation
 #' @returns denoised matrix
-#' @importFrom parallel detectCores makeCluster stopCluster
+#' @importFrom parallel detectCores makeCluster stopCluster clusterExport
 #' @importFrom doParallel registerDoParallel
 #' @importFrom parallelly availableCores
 #' @importFrom foreach foreach %dopar%
 #'
 #' @export
-denoise <- function(Q, lambdas=c(1e-3, 1e-2, 1e-1, 1, 10, 100), ncores=1){
+denoise <- function(Q, lambdas=c(0.1, 0.5, 1, 5, 10, 20, 50, 100),
+                    ncores=1, cv.fold=10){
 
   nsamples <- nrow(Q)
   numCores <- min(availableCores(), ncores)
   cl <- makeCluster(numCores)
   registerDoParallel(cl)
-
+  clusterExport(cl, varlist=c("deconv.l1", "cv.deconv"))
   i <- 1
   denoised_Q <- foreach(i=1:nsamples, .combine=rbind,
-                        .export=c("deconv", "cv.deconv"),
-                        .packages="quadprog") %dopar%{
+                        .export=c("deconv.l1", "cv.deconv"),
+                        .packages=c("osqp", "Matrix")) %dopar% {
     q_i <- Q[i, ]
     Q_it <- Q[-i, ] |> t()
     cv_result <- cv.deconv(y=q_i,
                            X=Q_it,
-                           lambdas=lambdas)
-    best_lambda <- lambdas[which.min(cv_result$validation_error)]
-    cv_weights <- cv_result$weights_list[[which.min(cv_result$validation_error)]]
+                           lambdas=lambdas,
+                           cv.fold=cv.fold)
+
+    best_lambda <- lambdas[which.min(cv_result$validation_errors)]
+    cv_weights <- cv_result$weights_list[[which.min(cv_result$validation_errors)]]
     selection_prob <- colMeans(cv_weights > 0)
-    subset_sample <- which(selection_prob == 1)
+    subset_sample <- which(selection_prob >= (1 - 1/cv.fold))
     subset_Q_it <- Q_it[, subset_sample]
 
-    denoise_result <- deconv(y=q_i, X=subset_Q_it, lambda=best_lambda)
-    denoise_result$y_denoise
+    final_weights <- deconv.l1(y=q_i, X=subset_Q_it, lambda=best_lambda)
+    y_denoise <- as.vector(subset_Q_it %*% final_weights)
+    y_denoise
+
   }
 
   stopCluster(cl)
   denoised_Q
+
 }
 

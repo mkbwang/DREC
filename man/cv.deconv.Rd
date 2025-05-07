@@ -4,7 +4,7 @@
 \alias{cv.deconv}
 \title{Cross validation of deconvolution}
 \usage{
-cv.deconv(y, X, lambdas = c(0.001, 0.01, 0.1))
+cv.deconv(y, X, lambdas = c(0.1, 0.5, 1, 5, 10, 20, 50, 100), cv.fold = 5)
 }
 \arguments{
 \item{y}{response vector}
@@ -12,6 +12,8 @@ cv.deconv(y, X, lambdas = c(0.001, 0.01, 0.1))
 \item{X}{predictor matrix}
 
 \item{lambdas}{penalty parameters to try}
+
+\item{cv.fold}{number of folds for cross validation}
 }
 \value{
 weights, mean error for the and chosen penalty parameter
