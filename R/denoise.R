@@ -1,36 +1,52 @@
 
 
-#' Deconvolve ecdfs of one sample with others (quadprog version)
+#' Deconvolve ecdfs of one sample with others (l2 loss)
 #'
 #' @param y response vector
 #' @param X predictor matrix
 #' @param lambda penalty parameter
-#' @importFrom quadprog solve.QP
+#' @importFrom Matrix Matrix
+#' @importFrom osqp osqp osqpSettings
 #' @returns weights, denoised value and chosen penalty parameter
-deconv <- function(y, X, lambda){
+deconv.l2 <- function(y, X, lambda){
 
   n_predictor <- ncol(X)
   n_sample <- nrow(X)
 
   # quadratic optimization parameters
-  dvec <- t(X) %*% y
-
-  # linear constraint (one equality and others are inequality)
-  Amat <-cbind(rep(1, n_predictor), diag(n_predictor))
-  bvec <- c(1, rep(0, n_predictor))
-
-
+  qvec <- -t(X) %*% y
   penalty <- lambda * (0.25*n_sample) * diag(nrow=n_predictor)
-  Dmat <- t(X) %*% X + penalty
-  result <- solve.QP(Dmat, dvec, Amat, bvec, meq=1)
-  weight <- result$solution
-  weight[weight < 1e-8] <- 0
+  Pmat <- Matrix(t(X) %*% X + penalty, sparse=TRUE)
 
-  y_denoise <- X %*% weight
+  # sum to one constraint
+  A_constraint0 <- matrix(rep(1, n_predictor), nrow=1)
+  l_constraint0 <- 1
+  u_constraint0 <- 1
 
-  return(list(y_denoise=as.vector(y_denoise), weight=weight))
+  # nonegative constraint
+  A_constraint1 <- diag(n_predictor)
+  l_constraint1 <- rep(0, n_predictor)
+  u_constraint1 <- rep(Inf, n_predictor)
+
+  Amat <- Matrix(rbind(A_constraint0, A_constraint1),
+                 sparse=TRUE)
+  l_vec <- c(l_constraint0, l_constraint1)
+  u_vec <- c(u_constraint0, u_constraint1)
+
+  settings <- osqpSettings(alpha = 1.0, max_iter=8000, verbose=FALSE)
+  model <- osqp(Pmat, qvec, Amat, l_vec, u_vec, settings)
+
+  result <- model$Solve()
+  weights <- result$x[1:n_predictor]
+  weights[weights < 1/n_predictor/10] = 0
+  weights <- weights / sum(weights)
+
+  return(weights)
 
 }
+
+
+
 
 #' Deconvolve ecdfs of one sample with others (l1 loss)
 #'
@@ -99,14 +115,22 @@ deconv.l1 <- function(y, X, lambda){
 #' @importFrom stats median
 #' @export
 cv.deconv <- function(y, X, lambdas = c(0.1, 0.5, 1, 5, 10, 20, 50, 100),
-                      cv.fold=5){
+                      cv.fold=5, type=c("l1", "l2")){
+
+  regression_type <- match.arg(type)
+  print(regression_type)
+  if (regression_type == "l1"){
+    deconv_func <- deconv.l1
+  } else{
+    deconv_func <- deconv.l2
+  }
 
   n_sample <- nrow(X)
   n_feature <- ncol(X)
   cv_list <- split(sample(n_sample),
                    cut(seq(1, n_sample), breaks=cv.fold))
-
-  validation_errors <- rep(0, length(lambdas))
+  validation_errors <- matrix(rep(0, length(lambdas)*n_sample),
+                              nrow=length(lambdas))
   weights_list <- list()
 
   for(j in 1:length(lambdas)){
@@ -122,14 +146,18 @@ cv.deconv <- function(y, X, lambdas = c(0.1, 0.5, 1, 5, 10, 20, 50, 100),
       y_train <- y[-cv_list[[k]]]
       X_train <- X[-cv_list[[k]], ]
 
-      fitted_weights <- deconv.l1(y_train, X_train, lambda=lambda)
+      fitted_weights <- deconv_func(y_train, X_train, lambda=lambda)
       weights_mat[k, ] <- fitted_weights
 
       y_validation_pred <- X_validation %*% fitted_weights
-      errors[k] <- mean(abs(y_validation - y_validation_pred))
+      if (regression_type == "l1"){
+        validation_errors[j, cv_list[[k]]] <- (y_validation - y_validation_pred)
+      } else{
+        validation_errors[j, cv_list[[k]]] <- (y_validation - y_validation_pred)^2
+      }
     }
 
-    validation_errors[j] <- mean(errors)
+    # validation_errors[j] <- mean(errors)
     weights_list[[j]] <- weights_mat
 
   }

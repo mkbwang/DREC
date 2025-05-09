@@ -4,7 +4,7 @@
 \alias{drec}
 \title{Denoise metagenomics count table}
 \usage{
-drec(X, lambdas = c(0.1, 0.5, 1, 5, 10, 20, 50, 100), ncores = 1)
+drec(X, lambdas = c(0.1, 0.5, 1, 5, 10, 20, 50, 100), ncores = 1, cv.fold = 10)
 }
 \arguments{
 \item{X}{raw count matrix, rows are samples and columns are features}
@@ -12,6 +12,8 @@ drec(X, lambdas = c(0.1, 0.5, 1, 5, 10, 20, 50, 100), ncores = 1)
 \item{lambdas}{penalty parameters to choose from}
 
 \item{ncores}{number of cores for parallel computing}
+
+\item{cv.fold}{number of folds for cross validation}
 }
 \value{
 denoised count matrix
