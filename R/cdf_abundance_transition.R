@@ -42,6 +42,10 @@ calcval <- function(Q_denoised, Q_observed, values){
 
     rep_unique_Q <- t(replicate(n=nsample, unique_Q))
     lindex <- rowSums(rep_unique_Q <= Q_denoised)
+
+    lindex[lindex < 1] <- 1
+    lindex[lindex == length(unique_Q)] <- length(unique_Q) - 1
+
     uindex <- lindex + 1
 
     Q_lower <- unique_Q[lindex]
