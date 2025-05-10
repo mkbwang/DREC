@@ -4,21 +4,18 @@
 \alias{denoise}
 \title{deconvolve every row of a matrix with ECDF values}
 \usage{
-denoise(
-  Q,
-  lambdas = c(0.1, 0.5, 1, 5, 10, 20, 50, 100),
-  ncores = 1,
-  cv.fold = 10
-)
+denoise(Q, lambda = 0.1, cv.fold = 10, type = c("l1", "l2"), ncores = 1)
 }
 \arguments{
 \item{Q}{input matrix whose entries are ECDF values}
 
-\item{lambdas}{penalty parameters to choose from}
-
-\item{ncores}{number of cores for parallel processing, by default 1}
+\item{lambda}{penalty parameter}
 
 \item{cv.fold}{number of folds for cross validation}
+
+\item{type}{choose between absolute loss or square loss when fitting deconvolution}
+
+\item{ncores}{number of cores for parallel processing, by default 1}
 }
 \value{
 denoised matrix

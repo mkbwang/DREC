@@ -4,16 +4,18 @@
 \alias{cv.deconv}
 \title{Cross validation of deconvolution}
 \usage{
-cv.deconv(y, X, lambdas = c(0.1, 0.5, 1, 5, 10, 20, 50, 100), cv.fold = 5)
+cv.deconv(y, X, lambda = 0.1, cv.fold = 5, type = c("l1", "l2"))
 }
 \arguments{
 \item{y}{response vector}
 
 \item{X}{predictor matrix}
 
-\item{lambdas}{penalty parameters to try}
+\item{lambda}{penalty parameter}
 
-\item{cv.fold}{number of folds for cross validation}
+\item{cv.fold}{number of folds for repeated fitting}
+
+\item{type}{choose between absolute loss or square loss when fitting deconvolution}
 }
 \value{
 weights, mean error for the and chosen penalty parameter
